@@ -1,0 +1,133 @@
+.dual-range-slider {
+  width: 100%;
+}
+
+.slider-label {
+  display: block;
+  margin-bottom: 12px;
+  color: #555;
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.slider-container {
+  position: relative;
+  width: 100%;
+  height: 40px;
+  margin-bottom: 10px;
+}
+
+.slider {
+  position: absolute;
+  width: 100%;
+  height: 5px;
+  border-radius: 5px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  cursor: pointer;
+  pointer-events: all;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+  transition: all 0.2s ease;
+  border: 2px solid white;
+}
+
+.slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.6);
+}
+
+.slider::-moz-range-thumb {
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  cursor: pointer;
+  pointer-events: all;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+  transition: all 0.2s ease;
+  border: 2px solid white;
+}
+
+.slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.6);
+}
+
+.slider-track {
+  position: absolute;
+  width: 100%;
+  height: 5px;
+  background: #e0e0e0;
+  border-radius: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+.slider-range {
+  position: absolute;
+  height: 5px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+}
+
+.slider-values {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.slider-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #667eea;
+  text-align: center;
+  background: #f8f9fa;
+  transition: all 0.3s ease;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.slider-input:focus {
+  outline: none;
+  border-color: #667eea;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.slider-input::-webkit-inner-spin-button,
+.slider-input::-webkit-outer-spin-button {
+  opacity: 1;
+}
+
+.slider-separator {
+  color: #999;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+

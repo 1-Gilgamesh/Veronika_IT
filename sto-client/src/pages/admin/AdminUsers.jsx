@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import axios from '../../api/axios';
+import Notification from '../../components/Notification';
+import CustomDropdown from '../../components/CustomDropdown';
+import CustomCalendar from '../../components/CustomCalendar';
+import './AdminShared.css';
 
 const AdminUsers = () => {
-    // Дані
     const [clients, setClients] = useState([]);
     const [services, setServices] = useState([]);
     const [masters, setMasters] = useState([]);
-    
-    // Стан інтерфейсу
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedClient, setSelectedClient] = useState(null); // Кого ми зараз записуємо?
-
-    // Форма запису
+    const [selectedClient, setSelectedClient] = useState(null);
+    const [notification, setNotification] = useState(null);
     const [bookingData, setBookingData] = useState({
         service_id: '',
         master_id: '',
@@ -33,135 +33,163 @@ const AdminUsers = () => {
             setServices(servicesRes.data);
             setMasters(mastersRes.data);
         } catch (err) {
-            alert('Помилка завантаження даних');
+            setNotification({ message: 'Помилка завантаження даних', type: 'error' });
         }
     };
 
-    // Фільтрація клієнтів (пошук)
-    const filteredClients = clients.filter(c => 
-        c.full_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const filteredClients = clients.filter(c =>
+        c.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // Створити запис
     const handleCreateAppointment = async (e) => {
         e.preventDefault();
         try {
             await axios.post('/appointments', {
-                client_id: selectedClient.id, // <--- Передаємо ID обраного клієнта
+                client_id: selectedClient.id,
                 service_id: bookingData.service_id,
                 master_id: bookingData.master_id,
                 start_datetime: bookingData.datetime
             });
-            alert(`✅ Успішно записано клієнта ${selectedClient.full_name}!`);
-            setSelectedClient(null); // Закрити форму
+            setNotification({
+                message: `✅ Успішно записано клієнта ${selectedClient.full_name}!`,
+                type: 'success'
+            });
+            setSelectedClient(null);
             setBookingData({ service_id: '', master_id: '', datetime: '' });
         } catch (err) {
-            alert("Помилка: " + (err.response?.data?.message || err.message));
+            setNotification({
+                message: "Помилка: " + (err.response?.data?.message || err.message),
+                type: 'error'
+            });
         }
     };
 
     return (
-        <div className="container">
-            <h1>👥 База Клієнтів</h1>
+        <div className="admin-page">
+            <div className="admin-header">
+                <h1>👥 База Клієнтів</h1>
+                <p className="admin-subtitle">Всього клієнтів: {clients.length}</p>
+            </div>
 
-            {/* --- БЛОК 1: ПОШУК І ТАБЛИЦЯ --- */}
-            {!selectedClient && (
+            {!selectedClient ? (
                 <>
-                    <input 
-                        type="text" 
-                        placeholder="🔍 Пошук за ім'ям або email..." 
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        style={{ padding: '10px', width: '100%', marginBottom: '20px', boxSizing: 'border-box' }}
-                    />
-
-                    <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', border: '1px solid #ddd' }}>
-                        <thead>
-                            <tr style={{ background: '#343a40', color: '#fff', textAlign: 'left' }}>
-                                <th style={{ padding: '12px' }}>ID</th>
-                                <th style={{ padding: '12px' }}>ПІБ</th>
-                                <th style={{ padding: '12px' }}>Email</th>
-                                <th style={{ padding: '12px' }}>Дії</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {filteredClients.map(client => (
-                                <tr key={client.id} style={{ borderBottom: '1px solid #eee' }}>
-                                    <td style={{ padding: '12px' }}>#{client.id}</td>
-                                    <td style={{ padding: '12px', fontWeight: 'bold' }}>{client.full_name}</td>
-                                    <td style={{ padding: '12px' }}>{client.email}</td>
-                                    <td style={{ padding: '12px' }}>
-                                        <button 
-                                            onClick={() => setSelectedClient(client)}
-                                            style={bookBtnStyle}
-                                        >
-                                            📅 Записати
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </>
-            )}
-
-            {/* --- БЛОК 2: ФОРМА ЗАПИСУ (З'являється при виборі клієнта) --- */}
-            {selectedClient && (
-                <div style={{ background: '#e9ecef', padding: '30px', borderRadius: '10px', border: '1px solid #ccc' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-                        <h2>📝 Запис для клієнта: <span style={{color: '#007bff'}}>{selectedClient.full_name}</span></h2>
-                        <button onClick={() => setSelectedClient(null)} style={cancelBtnStyle}>✕ Скасувати</button>
-                    </div>
-                    
-                    <form onSubmit={handleCreateAppointment} style={{ display: 'grid', gap: '20px', maxWidth: '500px' }}>
-                        
-                        <label>
-                            <strong>Послуга:</strong>
-                            <select 
-                                value={bookingData.service_id}
-                                onChange={e => setBookingData({...bookingData, service_id: e.target.value})}
-                                required style={inputStyle}
-                            >
-                                <option value="">-- Оберіть послугу --</option>
-                                {services.map(s => <option key={s.id} value={s.id}>{s.name} ({s.price} грн)</option>)}
-                            </select>
-                        </label>
-
-                        <label>
-                            <strong>Майстер:</strong>
-                            <select 
-                                value={bookingData.master_id}
-                                onChange={e => setBookingData({...bookingData, master_id: e.target.value})}
-                                required style={inputStyle}
-                            >
-                                <option value="">-- Оберіть майстра --</option>
-                                {masters.map(m => <option key={m.id} value={m.id}>{m.first_name} {m.last_name}</option>)}
-                            </select>
-                        </label>
-
-                        <label>
-                            <strong>Дата та час:</strong>
-                            <input 
-                                type="datetime-local" 
-                                value={bookingData.datetime}
-                                onChange={e => setBookingData({...bookingData, datetime: e.target.value})}
-                                required style={inputStyle}
+                    <div className="admin-card">
+                        <div style={{ position: 'relative' }}>
+                            <span style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)', fontSize: '1.2rem' }}>🔍</span>
+                            <input
+                                type="text"
+                                placeholder="Пошук за ім'ям або email..."
+                                value={searchTerm}
+                                onChange={e => setSearchTerm(e.target.value)}
+                                className="admin-input"
+                                style={{ paddingLeft: '45px' }}
                             />
-                        </label>
+                        </div>
+                    </div>
 
-                        <button type="submit" style={submitBtnStyle}>Підтвердити запис</button>
+                    <div className="admin-card" style={{ overflowX: 'auto' }}>
+                        {filteredClients.length === 0 ? (
+                            <div className="admin-empty">
+                                {searchTerm ? 'Клієнтів не знайдено' : 'Клієнтів поки немає'}
+                            </div>
+                        ) : (
+                            <table className="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>ПІБ</th>
+                                        <th>Email</th>
+                                        <th>Дії</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredClients.map(client => (
+                                        <tr key={client.id}>
+                                            <td><strong>#{client.id}</strong></td>
+                                            <td><strong>{client.full_name}</strong></td>
+                                            <td>{client.email}</td>
+                                            <td>
+                                                <button
+                                                    onClick={() => setSelectedClient(client)}
+                                                    className="admin-button admin-button-primary"
+                                                    style={{ padding: '8px 16px', fontSize: '0.9rem' }}
+                                                >
+                                                    📅 Записати
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
+                </>
+            ) : (
+                <div className="admin-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', flexWrap: 'wrap', gap: '15px' }}>
+                        <h3 style={{ margin: 0, color: '#333' }}>
+                            📝 Запис для клієнта: <span style={{ color: '#667eea' }}>{selectedClient.full_name}</span>
+                        </h3>
+                        <button
+                            onClick={() => {
+                                setSelectedClient(null);
+                                setBookingData({ service_id: '', master_id: '', datetime: '' });
+                            }}
+                            className="admin-button admin-button-secondary"
+                        >
+                            ✕ Скасувати
+                        </button>
+                    </div>
+
+                    <form onSubmit={handleCreateAppointment} className="admin-form" style={{ maxWidth: '600px' }}>
+                        <CustomDropdown
+                            label="Послуга"
+                            placeholder="Оберіть послугу"
+                            value={bookingData.service_id}
+                            onChange={(e) => setBookingData({...bookingData, service_id: e.target.value || ''})}
+                            options={services.map(s => ({
+                                value: s.id,
+                                label: `${s.name} (${s.price} грн)`
+                            }))}
+                            required
+                        />
+
+                        <CustomDropdown
+                            label="Майстер"
+                            placeholder="Оберіть майстра"
+                            value={bookingData.master_id}
+                            onChange={(e) => setBookingData({...bookingData, master_id: e.target.value || ''})}
+                            options={masters.map(m => ({
+                                value: m.id,
+                                label: `${m.first_name} ${m.last_name} (${m.position})`
+                            }))}
+                            required
+                        />
+
+                        <CustomCalendar
+                            label="Дата та час"
+                            value={bookingData.datetime}
+                            onChange={(e) => setBookingData({...bookingData, datetime: e.target.value})}
+                            required
+                        />
+
+                        <button type="submit" className="admin-button admin-button-primary">
+                            Підтвердити запис
+                        </button>
                     </form>
                 </div>
+            )}
+
+            {notification && (
+                <Notification
+                    message={notification.message}
+                    type={notification.type}
+                    onClose={() => setNotification(null)}
+                />
             )}
         </div>
     );
 };
-
-// Стилі
-const bookBtnStyle = { padding: '8px 15px', background: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' };
-const cancelBtnStyle = { padding: '8px 15px', background: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' };
-const submitBtnStyle = { padding: '12px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '16px', marginTop: '10px' };
-const inputStyle = { width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc', marginTop: '5px' };
 
 export default AdminUsers;

@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from '../../api/axios';
+import Notification from '../../components/Notification';
+import CustomDropdown from '../../components/CustomDropdown';
+import './AdminShared.css';
 
 const AdminAppointments = () => {
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [notification, setNotification] = useState(null);
 
     useEffect(() => {
         loadAppointments();
@@ -11,110 +15,133 @@ const AdminAppointments = () => {
 
     const loadAppointments = async () => {
         try {
-            const res = await axios.get('/appointments'); // GET /api/appointments
+            const res = await axios.get('/appointments');
             setAppointments(res.data);
             setLoading(false);
         } catch (err) {
-            alert('Помилка завантаження списку записів');
+            setNotification({ message: 'Помилка завантаження списку записів', type: 'error' });
             setLoading(false);
         }
     };
 
-    // Функція зміни статусу
     const handleStatusChange = async (id, newStatus) => {
         try {
-            // Відправляємо PATCH запит
             await axios.patch(`/appointments/${id}/status`, { status: newStatus });
-            
-            // Оновлюємо стан локально (щоб не перезавантажувати сторінку)
             setAppointments(prev => prev.map(app => 
                 app.id === id ? { ...app, status: newStatus } : app
             ));
-            
+            setNotification({ message: '✅ Статус оновлено!', type: 'success' });
         } catch (err) {
-            alert('Не вдалося змінити статус');
+            setNotification({ message: 'Не вдалося змінити статус', type: 'error' });
         }
     };
 
-    // Кольори для статусів
     const getStatusColor = (status) => {
         switch (status) {
-            case 'confirmed': return '#d4edda'; // Зелений
-            case 'completed': return '#c3e6cb'; // Темний зелений
-            case 'cancelled': return '#f8d7da'; // Червоний
-            case 'pending':   return '#fff3cd'; // Жовтий
-            default: return '#fff';
+            case 'confirmed': return '#28a745';
+            case 'completed': return '#17a2b8';
+            case 'cancelled': return '#dc3545';
+            case 'pending': return '#ffc107';
+            default: return '#6c757d';
         }
     };
 
-    if (loading) return <div className="container">Завантаження...</div>;
+    const getStatusLabel = (status) => {
+        const labels = {
+            'pending': '⏳ Очікує',
+            'confirmed': '✅ Підтверджено',
+            'completed': '🏁 Виконано',
+            'cancelled': '❌ Скасовано',
+            'no_show': '🚫 Не з\'явився'
+        };
+        return labels[status] || status;
+    };
+
+    if (loading) {
+        return (
+            <div className="admin-page">
+                <div className="admin-loading">Завантаження...</div>
+            </div>
+        );
+    }
 
     return (
-        <div className="container">
-            <h1 style={{ marginBottom: '20px' }}>📅 Управління записами</h1>
-
-            <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
-                    <thead>
-                        <tr style={{ background: '#343a40', color: '#fff', textAlign: 'left' }}>
-                            <th style={thStyle}>ID</th>
-                            <th style={thStyle}>Клієнт</th>
-                            <th style={thStyle}>Послуга</th>
-                            <th style={thStyle}>Майстер</th>
-                            <th style={thStyle}>Дата та Час</th>
-                            <th style={thStyle}>Ціна</th>
-                            <th style={thStyle}>Статус</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {appointments.map(app => (
-                            <tr key={app.id} style={{ borderBottom: '1px solid #ddd', background: getStatusColor(app.status) }}>
-                                <td style={tdStyle}>#{app.id}</td>
-                                <td style={tdStyle}>
-                                    <strong>{app.client?.full_name}</strong><br/>
-                                    <span style={{ fontSize: '0.8em', color: '#555' }}>{app.client?.email}</span>
-                                </td>
-                                <td style={tdStyle}>{app.Service?.name}</td>
-                                <td style={tdStyle}>{app.master?.first_name} {app.master?.last_name}</td>
-                                <td style={tdStyle}>
-                                    {new Date(app.start_datetime).toLocaleString('uk-UA', {
-                                        day: '2-digit', month: '2-digit', year: 'numeric',
-                                        hour: '2-digit', minute: '2-digit'
-                                    })}
-                                </td>
-                                <td style={tdStyle}>{app.Service?.price} грн</td>
-                                <td style={tdStyle}>
-                                    {/* Випадаючий список для зміни статусу */}
-                                    <select 
-                                        value={app.status} 
-                                        onChange={(e) => handleStatusChange(app.id, e.target.value)}
-                                        style={{ 
-                                            padding: '5px', 
-                                            borderRadius: '4px', 
-                                            border: '1px solid #999',
-                                            background: '#fff',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        <option value="pending">⏳ Очікує</option>
-                                        <option value="confirmed">✅ Підтверджено</option>
-                                        <option value="completed">🏁 Виконано</option>
-                                        <option value="cancelled">❌ Скасовано</option>
-                                        <option value="no_show">🚫 Не з'явився</option>
-                                    </select>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-                {appointments.length === 0 && <p style={{ padding: '20px', textAlign: 'center' }}>Записів поки немає.</p>}
+        <div className="admin-page">
+            <div className="admin-header">
+                <h1>📅 Управління записами</h1>
+                <p className="admin-subtitle">Всього записів: {appointments.length}</p>
             </div>
+
+            <div className="admin-card" style={{ overflowX: 'auto' }}>
+                {appointments.length === 0 ? (
+                    <div className="admin-empty">Записів поки немає</div>
+                ) : (
+                    <table className="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Клієнт</th>
+                                <th>Послуга</th>
+                                <th>Майстер</th>
+                                <th>Дата та Час</th>
+                                <th>Ціна</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {appointments.map(app => (
+                                <tr key={app.id}>
+                                    <td><strong>#{app.id}</strong></td>
+                                    <td>
+                                        <strong>{app.client?.full_name || 'Невідомо'}</strong>
+                                        {app.client?.email && (
+                                            <div style={{ fontSize: '0.85em', color: '#666', marginTop: '4px' }}>
+                                                {app.client.email}
+                                            </div>
+                                        )}
+                                    </td>
+                                    <td>{app.Service?.name || 'Послуга видалена'}</td>
+                                    <td>{app.master?.first_name} {app.master?.last_name}</td>
+                                    <td>
+                                        {new Date(app.start_datetime).toLocaleString('uk-UA', {
+                                            day: '2-digit',
+                                            month: '2-digit',
+                                            year: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        })}
+                                    </td>
+                                    <td><strong>{app.Service?.price || 0} грн</strong></td>
+                                    <td>
+                                        <CustomDropdown
+                                            value={app.status}
+                                            onChange={(e) => handleStatusChange(app.id, e.target.value)}
+                                            options={[
+                                                { value: 'pending', label: '⏳ Очікує' },
+                                                { value: 'confirmed', label: '✅ Підтверджено' },
+                                                { value: 'completed', label: '🏁 Виконано' },
+                                                { value: 'cancelled', label: '❌ Скасовано' },
+                                                { value: 'no_show', label: '🚫 Не з\'явився' }
+                                            ]}
+                                            placeholder={getStatusLabel(app.status)}
+                                        />
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
+            </div>
+
+            {notification && (
+                <Notification
+                    message={notification.message}
+                    type={notification.type}
+                    onClose={() => setNotification(null)}
+                />
+            )}
         </div>
     );
 };
-
-// Стилі таблиці
-const thStyle = { padding: '12px', borderBottom: '2px solid #ddd' };
-const tdStyle = { padding: '12px', verticalAlign: 'middle' };
 
 export default AdminAppointments;

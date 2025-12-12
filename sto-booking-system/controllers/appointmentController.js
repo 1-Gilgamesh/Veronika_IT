@@ -27,6 +27,7 @@ exports.createAppointment = async (req, res) => {
         // ----------------------------------------------------
         
         // Визначаємо день тижня (у JS 0=Неділя, у нас в БД 7=Неділя, 1=Понеділок)
+        // Використовуємо локальний час, оскільки datetime-local input відправляє локальний час
         let dayOfWeek = requestedStart.getDay(); 
         if (dayOfWeek === 0) dayOfWeek = 7; 
 
@@ -40,16 +41,21 @@ exports.createAppointment = async (req, res) => {
         }
 
         // б) Чи впадає час у робочі години?
-        // Парсимо час з бази (формат '09:00:00')
-        const [startHour, startMinute] = schedule.start_time.split(':');
-        const [endHour, endMinute] = schedule.end_time.split(':');
+        // Парсимо час з бази (формат '09:00:00' або '09:00:00.000')
+        const startTimeParts = schedule.start_time.split(':');
+        const endTimeParts = schedule.end_time.split(':');
+        const startHour = parseInt(startTimeParts[0]);
+        const startMinute = parseInt(startTimeParts[1]);
+        const endHour = parseInt(endTimeParts[0]);
+        const endMinute = parseInt(endTimeParts[1]);
 
         // Створюємо об'єкти Date для початку і кінця зміни у ЦЕЙ КОНКРЕТНИЙ ДЕНЬ
+        // Використовуємо локальний час для узгодження з requestedStart
         const shiftStart = new Date(requestedStart);
-        shiftStart.setHours(startHour, startMinute, 0);
+        shiftStart.setHours(startHour, startMinute, 0, 0);
 
         const shiftEnd = new Date(requestedStart);
-        shiftEnd.setHours(endHour, endMinute, 0);
+        shiftEnd.setHours(endHour, endMinute, 0, 0);
 
         // Перевірка: Запис не може початися раніше зміни або закінчитися пізніше
         if (requestedStart < shiftStart || requestedEnd > shiftEnd) {

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import axios from '../api/axios'; // Наш налаштований клієнт
-import { useNavigate } from 'react-router-dom';
+import axios from '../api/axios';
+import { useNavigate, Link } from 'react-router-dom';
+import './AuthForm.css';
 
 const Register = () => {
     const navigate = useNavigate();
     
-    // Стан для полів форми
     const [formData, setFormData] = useState({
         full_name: '',
         email: '',
@@ -13,83 +13,119 @@ const Register = () => {
     });
 
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    // Оновлюємо стан при введенні тексту
     const handleChange = (e) => {
         setFormData({
             ...formData,
-            [e.target.type === 'email' ? 'email' : e.target.name]: e.target.value
+            [e.target.name]: e.target.value
         });
     };
 
-    // Відправка форми
     const handleSubmit = async (e) => {
-        e.preventDefault(); // Щоб сторінка не перезавантажувалась
+        e.preventDefault();
         setError('');
+        setLoading(true);
 
         try {
-            // 1. Відправляємо запит на сервер
             const response = await axios.post('/auth/register', {
                 full_name: formData.full_name,
                 email: formData.email,
                 password: formData.password
             });
 
-            // 2. Якщо успіх - зберігаємо токен у LocalStorage
             localStorage.setItem('token', response.data.token);
-            
-            alert('Реєстрація успішна!');
-            
-            // 3. Перекидаємо на головну
             navigate('/');
-            
-            // (Опціонально) Перезавантажити сторінку, щоб оновилось меню
             window.location.reload(); 
 
         } catch (err) {
-            // Якщо помилка (наприклад, такий email вже є)
             setError(err.response?.data?.message || 'Помилка реєстрації');
+            setLoading(false);
         }
     };
 
     return (
-        <div className="container">
-            <h2>Реєстрація нового клієнта</h2>
-            
-            {error && <p style={{ color: 'red' }}>{error}</p>}
+        <div className="auth-container">
+            <div className="auth-card">
+                <div className="auth-header">
+                    <h2>📝 Реєстрація</h2>
+                    <p>Створіть новий обліковий запис</p>
+                </div>
 
-            <form onSubmit={handleSubmit} style={{ maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <input 
-                    type="text" 
-                    name="full_name" 
-                    placeholder="ПІБ (напр. Іван Петренко)" 
-                    value={formData.full_name} 
-                    onChange={handleChange} 
-                    required 
-                    style={{ padding: '8px' }}
-                />
-                <input 
-                    type="email" 
-                    name="email" 
-                    placeholder="Email" 
-                    value={formData.email} 
-                    onChange={handleChange} 
-                    required 
-                    style={{ padding: '8px' }}
-                />
-                <input 
-                    type="password" 
-                    name="password" 
-                    placeholder="Пароль" 
-                    value={formData.password} 
-                    onChange={handleChange} 
-                    required 
-                    style={{ padding: '8px' }}
-                />
-                <button type="submit" style={{ padding: '10px', background: '#28a745', color: '#fff', border: 'none', cursor: 'pointer' }}>
-                    Зареєструватися
-                </button>
-            </form>
+                {error && <div className="error-message">{error}</div>}
+
+                <form onSubmit={handleSubmit} className="auth-form">
+                    <div className="form-group">
+                        <label htmlFor="full_name">
+                            <span>👤</span>
+                            ПІБ
+                        </label>
+                        <input 
+                            id="full_name"
+                            type="text" 
+                            name="full_name" 
+                            placeholder="Іван Петренко" 
+                            value={formData.full_name} 
+                            onChange={handleChange} 
+                            required 
+                            className="form-input"
+                            disabled={loading}
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="email">
+                            <span>📧</span>
+                            Email
+                        </label>
+                        <input 
+                            id="email"
+                            type="email" 
+                            name="email" 
+                            placeholder="your.email@example.com" 
+                            value={formData.email} 
+                            onChange={handleChange} 
+                            required 
+                            className="form-input"
+                            disabled={loading}
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label htmlFor="password">
+                            <span>🔒</span>
+                            Пароль
+                        </label>
+                        <input 
+                            id="password"
+                            type="password" 
+                            name="password" 
+                            placeholder="Створіть надійний пароль" 
+                            value={formData.password} 
+                            onChange={handleChange} 
+                            required 
+                            className="form-input"
+                            disabled={loading}
+                            minLength="6"
+                        />
+                    </div>
+
+                    <button 
+                        type="submit" 
+                        className={`auth-button register ${loading ? 'loading' : ''}`}
+                        disabled={loading}
+                    >
+                        {loading ? 'Реєстрація...' : 'Зареєструватися'}
+                    </button>
+                </form>
+
+                <div className="auth-footer">
+                    <p>
+                        Вже маєте обліковий запис?{' '}
+                        <Link to="/login">Увійти</Link>
+                    </p>
+                </div>
+            </div>
         </div>
     );
 };
